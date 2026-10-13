@@ -1,0 +1,18 @@
+.pub{max-width:680px;margin:0 auto;padding:28px 18px 56px;display:flex;flex-direction:column;gap:22px}
+.pub-head{display:flex;align-items:center;gap:10px}
+.pub-head .sub{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pub-head .name{font-family:var(--f-display);font-weight:800;font-size:18px}
+.pub h1{font-size:clamp(30px,7vw,42px);line-height:1.05;font-weight:800}
+.pub .lede{font-size:17px;line-height:1.55;color:var(--fg)}
+.pub .points{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.pub .points li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;font-size:15px}
+.pub .points svg{margin-top:3px}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
+.plan{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface)}
+.plan .p{font-family:var(--f-display);font-weight:700;font-size:20px}
+.plan .n{font-weight:700}
+.plan.rec{border-color:var(--accent)}
+.pub form.panel{gap:14px}
+.consent{font-size:13px;color:var(--muted);line-height:1.45}
+.yourcode{display:inline-flex;gap:8px;align-items:center;font-size:14px;color:var(--muted)}
+.foot{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
