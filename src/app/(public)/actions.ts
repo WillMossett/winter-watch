@@ -50,7 +50,7 @@ export async function submitInterest(form: FormData) {
   const sql = db();
   const settings = await getSettings();
   const known = isCode(code) ? (await sql`select 1 from ww.households where code = ${code}`).length > 0 : false;
-  const wants = [wantsWalkthrough && 'free walkthrough', wantsAlerts && 'storm alerts'].filter(Boolean).join(' and ');
+  const wants = [wantsWalkthrough && 'free Winter Readiness Report (walkthrough)', wantsAlerts && 'storm alerts'].filter(Boolean).join(' and ');
   const note = [`${name} asked for ${wants || 'information'}`, phone && `phone ${phone}`, email && `email ${email}`, message && `“${message}”`].filter(Boolean).join(' · ');
 
   let householdCode: string | null = null;
