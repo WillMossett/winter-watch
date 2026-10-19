@@ -90,10 +90,10 @@ Techs use **/field** on their iPhones. It works with no signal: every visit, che
 **Setup, once**
 1. Run `db/migrations/002_field_visits.sql` in the Supabase SQL editor.
 2. Add `SUPABASE_SERVICE_ROLE_KEY` in Vercel (Settings → Environment Variables) and redeploy. The private `visit-photos` bucket is created on the first upload.
-3. Supabase → Authentication → Email Templates → Magic Link: add `Your code: {{ .Token }}` so techs get a 6-digit code (links open in Safari, not the installed app).
+3. Run `db/migrations/003_tech_text_login.sql`. Techs sign in with a 6-digit code texted to their mobile from the Winter Watch number (each tech texts that number once first).
 4. Settings → Team: add each tech with role **Field tech** and their mobile. Set the **team alert phone** so flagged visits text you.
 
-**Installing on a tech's iPhone:** open `watch.micasastays.com/field` in Safari → Share → Add to Home Screen → open it from the home screen → enter email → enter the 6-digit code.
+**Installing on a tech's iPhone:** open `watch.micasastays.com/field` in Safari → Share → Add to Home Screen → open it from the home screen → enter their mobile → enter the 6-digit code from the text.
 
 **How it runs**
 - Open a client household → **Winter Watch plan** → set the start date, owner mobile, usual tech, access notes and any extra checks. Weekly (or every 2 weeks) visits appear on the schedule a week ahead.

@@ -1,5 +1,6 @@
 import 'server-only';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { hasServiceKey, supabaseAdmin } from './supabaseAdmin';
 import { createHmac } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -11,20 +12,14 @@ import path from 'node:path';
 export const BUCKET = 'visit-photos';
 const LOCAL_DIR = path.join(process.cwd(), '.data', 'photos');
 
-let admin: SupabaseClient | null = null;
 let bucketReady = false;
 
 export function storageMode(): 'supabase' | 'local' {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL ? 'supabase' : 'local';
+  return hasServiceKey() ? 'supabase' : 'local';
 }
 
 function client(): SupabaseClient {
-  if (!admin) {
-    admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-  }
-  return admin;
+  return supabaseAdmin();
 }
 
 async function ensureBucket() {

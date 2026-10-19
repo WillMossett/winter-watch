@@ -292,8 +292,15 @@ export async function addTeamMember(f: FormData) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) redirect('/app/settings?error=' + encodeURIComponent('Enter a valid email address.'));
   const role = ['owner', 'member', 'tech'].includes(s(f, 'role')) ? s(f, 'role') : 'member';
   const phone = s(f, 'phone') ? toE164(s(f, 'phone')) : null;
-  await db()`insert into ww.team_members (email, name, role, phone) values (${email}, ${s(f, 'name') || null}, ${role}, ${phone})
-    on conflict (email) do update set name = excluded.name, role = excluded.role, phone = coalesce(excluded.phone, ww.team_members.phone)`;
+  if (role === 'tech' && !phone) redirect('/app/settings?error=' + encodeURIComponent('Field techs need a mobile number. Their sign-in code is texted to it.'));
+  if (s(f, 'phone') && !phone) redirect('/app/settings?error=' + encodeURIComponent('Enter a valid US mobile number.'));
+  try {
+    await db()`insert into ww.team_members (email, name, role, phone) values (${email}, ${s(f, 'name') || null}, ${role}, ${phone})
+      on conflict (email) do update set name = excluded.name, role = excluded.role, phone = coalesce(excluded.phone, ww.team_members.phone)`;
+  } catch (e) {
+    if (/team_members_phone/.test(String(e))) redirect('/app/settings?error=' + encodeURIComponent('That mobile number is already on another team member.'));
+    throw e;
+  }
   revalidatePath('/app/settings');
 }
 
