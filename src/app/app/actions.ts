@@ -290,8 +290,10 @@ export async function addTeamMember(f: FormData) {
   await requireOwner();
   const email = s(f, 'email').toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) redirect('/app/settings?error=' + encodeURIComponent('Enter a valid email address.'));
-  await db()`insert into ww.team_members (email, name, role) values (${email}, ${s(f, 'name') || null}, ${s(f, 'role') === 'owner' ? 'owner' : 'member'})
-    on conflict (email) do update set name = excluded.name, role = excluded.role`;
+  const role = ['owner', 'member', 'tech'].includes(s(f, 'role')) ? s(f, 'role') : 'member';
+  const phone = s(f, 'phone') ? toE164(s(f, 'phone')) : null;
+  await db()`insert into ww.team_members (email, name, role, phone) values (${email}, ${s(f, 'name') || null}, ${role}, ${phone})
+    on conflict (email) do update set name = excluded.name, role = excluded.role, phone = coalesce(excluded.phone, ww.team_members.phone)`;
   revalidatePath('/app/settings');
 }
 

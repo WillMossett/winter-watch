@@ -22,7 +22,7 @@ export const RESPONSE_TYPES = [
 ] as const;
 export const EVENT_LABEL: Record<string, string> = {
   ...Object.fromEntries(RESPONSE_TYPES),
-  note: 'Note', stage: 'Stage change', alerts: 'Storm alerts', check: 'Storm check request', edit: 'Details edited', mail: 'Mailed',
+  note: 'Note', visit: 'Visit', stage: 'Stage change', alerts: 'Storm alerts', check: 'Storm check request', edit: 'Details edited', mail: 'Mailed',
 };
 export const TIERS = ['Essential', 'Standard', 'Premium', 'White Glove'] as const;
 

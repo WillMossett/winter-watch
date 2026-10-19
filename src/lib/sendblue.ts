@@ -7,7 +7,9 @@ export function sendblueConfigured(): boolean {
 
 export type SendResult = { ok: boolean; handle?: string; status?: string; error?: string };
 
-export async function sendText(to: string, content: string, statusCallback?: string): Promise<SendResult> {
+// preReplyOverride: on an inbound-first (AI Agent) line, lets one message a day through to someone who
+// has not texted yet, e.g. a visit report link to an owner who only filled in the web form.
+export async function sendText(to: string, content: string, statusCallback?: string, opts?: { preReplyOverride?: boolean; mediaUrl?: string }): Promise<SendResult> {
   if (!sendblueConfigured()) return { ok: false, error: 'Sendblue is not set up' };
   const base = (process.env.SENDBLUE_API_BASE || 'https://api.sendblue.co').replace(/\/$/, '');
   try {
@@ -23,6 +25,8 @@ export async function sendText(to: string, content: string, statusCallback?: str
         from_number: process.env.SENDBLUE_FROM_NUMBER,
         content,
         ...(statusCallback ? { status_callback: statusCallback } : {}),
+        ...(opts?.preReplyOverride ? { pre_reply_override: true } : {}),
+        ...(opts?.mediaUrl ? { media_url: opts.mediaUrl } : {}),
       }),
     });
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;

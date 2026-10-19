@@ -83,6 +83,25 @@ Nothing to do. `vercel.json` schedules `/api/cron/weather` every 30 minutes, and
 
 ---
 
+## Field app (visits and reports)
+
+Techs use **/field** on their iPhones. It works with no signal: every visit, checklist answer and photo is saved on the phone and sends itself when service comes back (on opening the app, when signal returns, and every minute).
+
+**Setup, once**
+1. Run `db/migrations/002_field_visits.sql` in the Supabase SQL editor.
+2. Add `SUPABASE_SERVICE_ROLE_KEY` in Vercel (Settings → Environment Variables) and redeploy. The private `visit-photos` bucket is created on the first upload.
+3. Supabase → Authentication → Email Templates → Magic Link: add `Your code: {{ .Token }}` so techs get a 6-digit code (links open in Safari, not the installed app).
+4. Settings → Team: add each tech with role **Field tech** and their mobile. Set the **team alert phone** so flagged visits text you.
+
+**Installing on a tech's iPhone:** open `watch.micasastays.com/field` in Safari → Share → Add to Home Screen → open it from the home screen → enter email → enter the 6-digit code.
+
+**How it runs**
+- Open a client household → **Winter Watch plan** → set the start date, owner mobile, usual tech, access notes and any extra checks. Weekly (or every 2 weeks) visits appear on the schedule a week ahead.
+- Free-photo visits are created automatically when a lead texts their letter code or asks on the web form. Storm checks are created when a subscriber texts CHECK.
+- All clear: the owner is texted a link to the photo report the moment the visit syncs.
+- Anything flagged: nothing goes to the owner. You get a text, open **Visits → Waiting for your OK**, write the note they will read, and send (or hold and call them).
+- Weekly visits more than 2 days late are marked missed.
+
 ## Moving over from the pilot CRM
 1. In the pilot CRM, click **Export all**.
 2. In the new app go to **Households → Import**, choose that file and match its **code** column to "Existing code". Codes already printed on letters keep working, and new households get new codes.

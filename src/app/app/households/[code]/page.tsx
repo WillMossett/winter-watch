@@ -7,17 +7,31 @@ import { getSettings } from '@/lib/db';
 import { EVENT_LABEL, RESPONSE_TYPES, STAGES, STAGE_LABEL, TIERS } from '@/lib/leads';
 import { fmtDate, fmtDateTime, money, prettyPhone, todayDetroit } from '@/lib/text';
 import { assignToMe, logActivity, saveHousehold, saveLead, setExcluded } from '../../actions';
+import { addVisit, savePlan } from '../../visits/actions';
+import { db } from '@/lib/db';
+import { KIND_LABEL, type VisitKind } from '@/lib/checklist';
+import { ReportChip } from '../../visits/shared';
 
 export const metadata = { title: 'Household' };
 
 const EDIT: [string, string][] = [['owner', 'Owner name'], ['owner2', 'Second owner'], ['first_name', 'First name for greeting'], ['prop_address', 'Property street address'], ['prop_city', 'Property city'], ['prop_state', 'Property state'], ['prop_zip', 'Property ZIP'], ['mail_address', 'Mailing street address'], ['mail_city', 'Mailing city'], ['mail_state', 'Mailing state'], ['mail_zip', 'Mailing ZIP']];
 
-export default async function HouseholdPage({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ edit?: string; error?: string }> }) {
+export default async function HouseholdPage({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ edit?: string; error?: string; saved?: string; plan?: string }> }) {
   const { code } = await params;
   const sp = await searchParams;
   const [d, settings] = await Promise.all([householdDetail(decodeURIComponent(code)), getSettings()]);
   if (!d) notFound();
   const { h, lead, events, mailings, subs } = d;
+  const sql = db();
+  const [[plan], visits, team] = await Promise.all([
+    sql`select tier, interval_days, start_date::text, end_date::text, active, owner_phone, owner_email, tech_email, access_notes, extra_items from ww.service_plans where code = ${h.code}`,
+    sql<{ id: string; kind: VisitKind; due_date: string; status: string; has_issue: boolean; report_status: string }[]>`
+      select id, kind, due_date::text, status, has_issue, report_status from ww.visits where code = ${h.code}
+      order by due_date desc, created_at desc limit 12`,
+    sql<{ email: string; name: string | null }[]>`select email, name from ww.team_members order by role, name nulls last, email`,
+  ]);
+  const showPlan = Boolean(plan) || lead?.stage === 'client' || sp.plan === '1';
+  const firstPhone = plan?.owner_phone ?? subs.find((x) => x.status === 'active')?.phone ?? '';
   const link = `${settings.site_url.replace(/\/$/, '')}/${h.code}`;
   const qr = await QRCode.toString(link, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
   const sentMailings = mailings.filter((m) => m.status === 'sent');
@@ -102,6 +116,47 @@ export default async function HouseholdPage({ params, searchParams }: { params: 
             <div className="qr" dangerouslySetInnerHTML={{ __html: qr }} />
             <span className="linkbox">{link}</span>
             <p className="small muted">This is the page their QR code opens. Scans show up in Activity on their own.</p>
+          </section>
+          <section className="panel" id="plan">
+            <h2>Winter Watch plan</h2>
+            {sp.saved === 'plan' && <div className="banner good"><span>Plan saved. Visits for the next week are on the schedule.</span></div>}
+            {showPlan ? (
+              <form action={savePlan.bind(null, h.code)} className="stack" style={{ gap: 12 }}>
+                <div className="fields">
+                  <label className="f">Plan<select name="tier" defaultValue={plan?.tier ?? lead?.tier ?? 'Standard'}>{TIERS.map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
+                  <label className="f">Visits<select name="interval_days" defaultValue={String(plan?.interval_days ?? 7)}><option value="7">Every week</option><option value="14">Every 2 weeks</option></select></label>
+                  <label className="f">First visit<input type="date" name="start_date" defaultValue={plan?.start_date ?? today} required /></label>
+                  <label className="f">Last visit (optional)<input type="date" name="end_date" defaultValue={plan?.end_date ?? ''} /></label>
+                </div>
+                <div className="fields">
+                  <label className="f">Owner mobile for reports<input type="tel" name="owner_phone" defaultValue={firstPhone ? prettyPhone(firstPhone) : ''} placeholder="Texts the visit report" /></label>
+                  <label className="f">Owner email<input type="email" name="owner_email" defaultValue={plan?.owner_email ?? ''} /></label>
+                  <label className="f">Usual tech<select name="tech_email" defaultValue={plan?.tech_email ?? ''}><option value="">Anyone on the team</option>{team.map((t) => <option key={t.email} value={t.email}>{t.name ?? t.email}</option>)}</select></label>
+                </div>
+                <label className="f">Access notes (shown to the tech)<textarea name="access_notes" defaultValue={plan?.access_notes ?? ''} placeholder="Lockbox on side door, code 1234. Water shutoff in basement by the furnace." /></label>
+                <label className="f">Extra checks for this home, one per line<textarea name="extra_items" defaultValue={((plan?.extra_items as string[] | undefined) ?? []).join('\n')} placeholder={'Check the boathouse door\nRun the upstairs shower'} /></label>
+                <label className="check"><input type="checkbox" name="active" defaultChecked={plan ? plan.active : true} /> Active. Uncheck to stop scheduling visits.</label>
+                <div className="row"><button className="btn primary" type="submit">{plan ? 'Save plan' : 'Start plan'}</button></div>
+              </form>
+            ) : (
+              <div className="stack" style={{ gap: 8 }}>
+                <p className="small muted">Set up a plan when they sign up. Weekly visits then show on the field app and reports text the owner on their own.</p>
+                <div><Link className="btn" href={`/app/households/${h.code}?plan=1#plan`}>Set up plan</Link></div>
+              </div>
+            )}
+          </section>
+          <section className="panel">
+            <h2>Visits</h2>
+            {visits.length ? (
+              <ul className="timeline">{visits.map((x) => (
+                <li key={x.id}><span className="muted small">{fmtDate(x.due_date)}</span><span><Link href={`/app/visits/${x.id}`}><strong>{KIND_LABEL[x.kind]}</strong></Link> · {x.status === 'done' ? <>{x.has_issue ? 'Issue' : 'All clear'} <ReportChip s={x.report_status} /></> : x.status === 'scheduled' ? 'Scheduled' : x.status === 'missed' ? 'Missed' : 'Cancelled'}</span></li>
+              ))}</ul>
+            ) : <p className="muted small">No visits yet.</p>}
+            <form action={addVisit.bind(null, h.code)} className="row">
+              <select name="kind" defaultValue="extra" aria-label="Visit type">{(['extra', 'storm', 'photo', 'walkthrough'] as VisitKind[]).map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}</select>
+              <input type="date" name="due_date" defaultValue={today} aria-label="Due" />
+              <button className="btn" type="submit">Add visit</button>
+            </form>
           </section>
           <section className="panel">
             <h2>Storm alerts</h2>

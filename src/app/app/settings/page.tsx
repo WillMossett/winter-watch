@@ -74,14 +74,15 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       </section>
 
       <section className="panel">
-        <div className="panel-head"><h2>Team</h2><p>People who can sign in.</p></div>
+        <div className="panel-head"><h2>Team</h2><p>People who can sign in. Techs only see the field app at /field.</p></div>
         <div className="table-wrap"><table><thead><tr><th>Email</th><th>Name</th><th>Role</th><th></th></tr></thead>
-          <tbody>{team.map((t) => <tr key={t.email}><td>{t.email}</td><td>{t.name ?? '—'}</td><td>{t.role === 'owner' ? 'Owner' : 'Member'}</td><td>{owner && t.email !== me.email && <form action={removeTeamMember.bind(null, t.email)}><button className="btn quiet" type="submit">Remove</button></form>}</td></tr>)}</tbody></table></div>
+          <tbody>{team.map((t) => <tr key={t.email}><td>{t.email}</td><td>{t.name ?? '—'}</td><td>{t.role === 'owner' ? 'Owner' : t.role === 'tech' ? 'Field tech' : 'Member'}</td><td>{owner && t.email !== me.email && <form action={removeTeamMember.bind(null, t.email)}><button className="btn quiet" type="submit">Remove</button></form>}</td></tr>)}</tbody></table></div>
         {owner && (
           <form action={addTeamMember} className="fields" style={{ alignItems: 'end' }}>
             <label className="f">Email<input type="email" name="email" required /></label>
             <label className="f">Name<input type="text" name="name" /></label>
-            <label className="f">Role<select name="role" defaultValue="member"><option value="member">Member</option><option value="owner">Owner</option></select></label>
+            <label className="f">Role<select name="role" defaultValue="tech"><option value="tech">Field tech (visits only)</option><option value="member">Member (office app)</option><option value="owner">Owner</option></select></label>
+            <label className="f">Mobile<input type="tel" name="phone" placeholder="Optional" /></label>
             <div><button className="btn" type="submit">Add to team</button></div>
           </form>
         )}

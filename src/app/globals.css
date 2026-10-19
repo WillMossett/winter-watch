@@ -119,3 +119,23 @@ td a.rowlink:hover{text-decoration:underline}
 .split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.split{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:560px){.fstep{grid-template-columns:110px minmax(0,1fr) 84px;font-size:13px}.dl{grid-template-columns:110px minmax(0,1fr)}.kpi .v{font-size:24px}}
+
+/* Visit report (office detail + owner link) */
+.vr{display:flex;flex-direction:column;gap:18px}
+.vr-head h1{margin:2px 0}
+.vr-head p{color:var(--muted)}
+.vr-kind{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+.vr-status{display:inline-block;margin-top:10px;padding:6px 12px;border-radius:999px;font-weight:700;font-size:14px}
+.vr-status.good{background:var(--good-soft);color:var(--good)}
+.vr-status.bad{background:var(--bad-soft);color:var(--bad)}
+.vr-note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 14px;border-radius:6px;line-height:1.5}
+.vr-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(46%,200px),1fr));gap:10px}
+.vr-photo{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--muted);font-size:13px}
+.vr-photo img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
+.vr-sec h2{font-size:16px;margin-bottom:6px}
+.vr-sec ul{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.vr-sec li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border-top:1px solid var(--line)}
+.vr-sec li:first-child{border-top:0}
+.vr-item{display:flex;flex-direction:column;gap:2px}
+.vr-item em{font-style:normal;color:var(--bad);font-size:14px}
+.vr-notes{white-space:pre-wrap;line-height:1.5}

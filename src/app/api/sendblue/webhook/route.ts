@@ -2,6 +2,7 @@ import { db, getSettings } from '@/lib/db';
 import { toE164 } from '@/lib/text';
 import { classifyInbound, extractCode, REPLIES } from '@/lib/keywords';
 import { recordResponse } from '@/lib/leads';
+import { createPhotoVisit, createStormVisit } from '@/lib/visits';
 import { sendText } from '@/lib/sendblue';
 import { upsertSubscriber } from '@/lib/subscribers';
 
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
       note: `Texted "${content.trim().slice(0, 60)}". Wants the free photo this week${subscribe ? ' and storm alerts' : ''}. Phone ${phone}`,
       meta: { phone, photo: true } });
     await sql`update ww.leads set follow_up = coalesce(follow_up, current_date), updated_at = now() where code = ${letterCode}`;
+    await createPhotoVisit(letterCode, phone, 'text');
     if (subscribe) {
       await upsertSubscriber({ phone, code: letterCode, email: null, name: null, method: 'Text keyword', consentText: `Texted "${content.trim().slice(0, 40)}" to the MiCasa Stays number`, ip: null, promote: false });
     }
@@ -78,6 +80,7 @@ export async function POST(req: Request) {
     const [last] = await sql<{ id: string }[]>`select id from ww.alerts where status = 'sent' order by sent_at desc limit 1`;
     await sql`insert into ww.check_requests (subscriber_id, code, phone, alert_id) values (${sub?.id ?? null}, ${sub?.code ?? null}, ${phone}, ${last?.id ?? null})`;
     if (sub?.code) await sql`insert into ww.events (code, type, note) values (${sub.code}, 'check', 'Replied CHECK: wants a storm check')`;
+    if (sub?.code) await createStormVisit(sub.code, phone);
     await reply(REPLIES.check(settings.check_price));
   } else if (kind === 'help') {
     await reply(REPLIES.help);

@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { db } from './db';
 
-export type Member = { email: string; name: string | null; role: 'owner' | 'member' };
+export type Member = { email: string; name: string | null; role: 'owner' | 'member' | 'tech' };
 
 export async function supabaseServer() {
   const store = await cookies();
@@ -49,9 +49,11 @@ export async function currentMember(): Promise<Member | null> {
   return rows[0] ?? null;
 }
 
+// Office pages: owners and members. Techs only use the field app.
 export async function requireMember(): Promise<Member> {
   const m = await currentMember();
   if (!m) redirect('/login');
+  if (m.role === 'tech') redirect('/field');
   return m;
 }
 

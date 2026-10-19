@@ -8,6 +8,7 @@ import { upsertSubscriber } from '@/lib/subscribers';
 import { ALERT_CONSENT_TEXT } from '@/lib/consent';
 import { sendText } from '@/lib/sendblue';
 import { REPLIES } from '@/lib/keywords';
+import { createPhotoVisit } from '@/lib/visits';
 
 async function clientIp(): Promise<string> {
   const h = await headers();
@@ -67,6 +68,8 @@ export async function submitInterest(form: FormData) {
     await recordResponse({ code: newCode, type: 'form', note, mailingId: null, meta: { ip, typedCode: typed || null } });
     if (wantsWalkthrough) await sql`update ww.leads set follow_up = current_date where code = ${newCode}`;
   }
+
+  if (wantsWalkthrough && householdCode) await createPhotoVisit(householdCode, phone, 'form');
 
   if (wantsAlerts && phone) {
     await upsertSubscriber({ phone, code: householdCode, email: email || null, name, method: 'Web form', consentText: ALERT_CONSENT_TEXT, ip, promote: !wantsWalkthrough && !message });
