@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description: 'Scheduled, documented home checks for seasonal homes on the Lake Huron shoreline.',
   robots: { index: false, follow: false },
 };
+// A page that cannot finish in a minute should fail fast instead of hanging for five.
+export const maxDuration = 60;
+
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

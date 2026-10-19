@@ -10,8 +10,13 @@ export function db(): postgres.Sql {
     if (!url) throw new Error('DATABASE_URL is not set');
     g.__wwSql = postgres(url, {
       prepare: false,          // required for Supabase's transaction pooler
-      max: 5,
+      // One query per connection at a time. postgres.js normally pipelines several queries down one
+      // connection; Supabase's transaction pooler can lose track of pipelined queries, which left
+      // pages hanging (and once returned the wrong rows) when several ran in parallel.
+      ...({ max_pipeline: 1 } as object), // supported by postgres.js 3.4 at runtime; missing from its types
+      max: 8,
       idle_timeout: 20,
+      max_lifetime: 60 * 10,
       connect_timeout: 15,
       types: { numeric: { to: 1700, from: [1700], serialize: (x: unknown) => String(x), parse: (x: string) => Number(x) } },
     });
