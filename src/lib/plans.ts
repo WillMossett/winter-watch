@@ -13,8 +13,7 @@ export const FOUNDING = {
   rate: 299,
   regular: 349,
   bonuses: [
-    { name: 'Winter Readiness Report', note: 'Shutoffs, furnace and weak spots, photographed', value: 150 },
-    { name: 'Close-up check on your first visit', value: 250 },
+    { name: 'Full top-to-bottom check on your first visit', value: 250 },
     { name: 'Spring opening in April', value: 225 },
     { name: 'Heat up and lights on before your first trip back', value: 75 },
     { name: '2 hours meeting your contractors at the house', value: 110 },

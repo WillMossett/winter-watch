@@ -1,6 +1,7 @@
 import { db, getSettings } from '@/lib/db';
 import { toE164 } from '@/lib/text';
-import { classifyInbound, REPLIES } from '@/lib/keywords';
+import { classifyInbound, extractCode, REPLIES } from '@/lib/keywords';
+import { recordResponse } from '@/lib/leads';
 import { sendText } from '@/lib/sendblue';
 import { upsertSubscriber } from '@/lib/subscribers';
 
@@ -37,10 +38,32 @@ export async function POST(req: Request) {
     await sql`insert into ww.inbound_messages (phone, content, raw) values (${phone}, ${content}, ${sql.json(body as never)})`;
   }
 
-  const kind = classifyInbound(content);
   const settings = await getSettings();
+  // "STORM WW-7K2M" from a letter: pull out the code so the reply is credited to that household and mailing.
+  const found = extractCode(content, settings.code_prefix);
+  const known = found.code ? (await sql`select 1 from ww.households where code = ${found.code}`).length > 0 : false;
+  const letterCode = known ? found.code : null;
+  let kind = classifyInbound(letterCode ? found.rest : content);
+  // Any text carrying a letter code is a reply to the mailing (unless it is STOP, CHECK or HELP).
+  const wantsAlerts = letterCode ? /\b(STORM|START|JOIN|YES|ALERTS?|SUBSCRIBE)\b/i.test(found.rest) : false;
+  if (letterCode && kind === 'other') kind = 'start';
   const [sub] = await sql<{ id: string; code: string | null; status: string }[]>`select id, code, status from ww.subscribers where phone = ${phone}`;
   const reply = async (text: string) => { if (settings.alerts_enabled || kind === 'stop') await sendText(phone, text); };
+
+  // A reply that carries a letter code is a response to the mailing: log it and flag the free photo visit.
+  if (letterCode && kind === 'start') {
+    const subscribe = wantsAlerts; // "STORM WW-7K2M" subscribes; a bare code only asks for the photo
+    await recordResponse({ code: letterCode, type: 'text', mailingId: 'auto', stageIfNew: 'responded',
+      note: `Texted "${content.trim().slice(0, 60)}". Wants the free photo this week${subscribe ? ' and storm alerts' : ''}. Phone ${phone}`,
+      meta: { phone, photo: true } });
+    await sql`update ww.leads set follow_up = coalesce(follow_up, current_date), updated_at = now() where code = ${letterCode}`;
+    if (subscribe) {
+      await upsertSubscriber({ phone, code: letterCode, email: null, name: null, method: 'Text keyword', consentText: `Texted "${content.trim().slice(0, 40)}" to the MiCasa Stays number`, ip: null, promote: false });
+    }
+    await sql`update ww.inbound_messages set handled_as = ${'start'} where provider_id = ${handle}`;
+    await reply(subscribe ? REPLIES.photoAndAlerts : REPLIES.photoOnly);
+    return Response.json({ ok: true, handled: 'start', code: letterCode });
+  }
 
   if (kind === 'stop') {
     if (sub) {

@@ -2,6 +2,7 @@ import { Logo } from './Logo';
 import { ALERT_CONSENT_TEXT } from '@/lib/consent';
 import { submitInterest } from '@/app/(public)/actions';
 import type { Settings } from '@/lib/db';
+import { prettyPhone } from '@/lib/text';
 import { PLANS, FOUNDING } from '@/lib/plans';
 
 const Check = () => (
@@ -9,6 +10,8 @@ const Check = () => (
 );
 
 export function PublicPage({ code, known, settings, thanks, error }: { code: string | null; known: boolean; settings: Settings; thanks: boolean; error?: string }) {
+  const textLine = process.env.SENDBLUE_FROM_NUMBER ? prettyPhone(process.env.SENDBLUE_FROM_NUMBER) : null;
+  const textWord = `STORM${code && known ? ' ' + code : ''}`;
   return (
     <main className="pub">
       <div className="pub-head"><Logo size={36} /><div><div className="sub">MiCasa Stays</div><div className="name">Winter Watch</div></div></div>
@@ -48,12 +51,13 @@ export function PublicPage({ code, known, settings, thanks, error }: { code: str
       {thanks ? (
         <section className="panel" style={{ borderColor: 'var(--good)' }}>
           <h2>Thank you. We&apos;ll be in touch.</h2>
-          <p>Someone from MiCasa Stays will reach out within one business day to set up your Winter Readiness Report. If you signed up for storm alerts, you&apos;ll get a text confirming it.</p>
+          <p>Someone from MiCasa Stays will reach out within one business day and we&apos;ll get a photo of your place to you this week. If you signed up for storm alerts, you&apos;ll get a text confirming it.</p>
         </section>
       ) : (
         <form action={submitInterest} className="panel">
-          <h2>Claim your free Winter Readiness Report</h2>
-          <p className="small muted" style={{ margin: 0 }}>We walk your home (you don&apos;t need to be there) and send you photos of your shutoffs, furnace and weak spots. It&apos;s yours to keep, even if you never sign up.</p>
+          <h2>Step one is free: a photo of your place this week</h2>
+          <p className="small muted" style={{ margin: 0 }}>We walk the outside, check the roof, gutters and doors, and text you what we see. No key, nothing to sign. You&apos;ll know exactly what you&apos;re getting before you spend a dollar.</p>
+          {textLine && <p style={{ margin: 0 }}>Fastest way: text <strong>{textWord}</strong> to <strong>{textLine}</strong>. Or fill this in.</p>}
           {error && <div className="banner bad"><span>{error}</span></div>}
           {code && known ? <input type="hidden" name="code" value={code} /> : (
             <label className="f">Code from your letter (if you have one)<input type="text" name="typed_code" defaultValue={code ?? ''} placeholder="WW-A7K2" autoCapitalize="characters" /></label>
@@ -64,7 +68,7 @@ export function PublicPage({ code, known, settings, thanks, error }: { code: str
             <label className="f">Mobile number<input type="tel" name="phone" autoComplete="tel" inputMode="tel" /></label>
             <label className="f">Email<input type="email" name="email" autoComplete="email" /></label>
           </div>
-          <label className="check"><input type="checkbox" name="walkthrough" defaultChecked /> Send me my free Winter Readiness Report ($150 value)</label>
+          <label className="check"><input type="checkbox" name="walkthrough" defaultChecked /> Send me a free photo of my place this week</label>
           <label className="check"><input type="checkbox" name="alerts" /> <span>Not ready yet? Text me free storm alerts<br /><span className="consent">{ALERT_CONSENT_TEXT}</span></span></label>
           <label className="f">Anything we should know? (optional)<textarea name="message" placeholder="When you close the cottage, whether the water stays on, questions" /></label>
           <div><button className="btn primary" type="submit">Send</button></div>

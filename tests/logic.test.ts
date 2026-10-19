@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyInbound } from '../src/lib/keywords.ts';
+import { classifyInbound, extractCode } from '../src/lib/keywords.ts';
 import { pickAlerts, draftMessage } from '../src/lib/nws.ts';
 import { toE164, normalizeCode, isCode, addrKey, smsSegments, randomCode } from '../src/lib/text.ts';
 import { parseCSV, toCSV } from '../src/lib/csv.ts';
@@ -62,4 +62,17 @@ test('weather: keeps only watched warnings in our counties', () => {
   assert.match(msg, /Reply CHECK \(\$65, no contract\)\. Reply STOP to opt out\.$/);
   const seg = smsSegments(msg);
   assert.ok(seg.gsm, 'draft should stay in plain SMS characters');
+});
+
+test('letter codes in texts', () => {
+  assert.deepEqual(extractCode('STORM WW-7K2M', 'WW'), { code: 'WW-7K2M', rest: 'STORM' });
+  assert.deepEqual(extractCode('storm ww 7k2m', 'WW'), { code: 'WW-7K2M', rest: 'storm' });
+  assert.deepEqual(extractCode('WW7K2M', 'WW'), { code: 'WW-7K2M', rest: '' });
+  assert.equal(extractCode('Storm ww-7k2m please', 'WW').code, 'WW-7K2M');
+  assert.equal(extractCode('CHECK', 'WW').code, null);          // ordinary words are never codes
+  assert.equal(extractCode('STORM', 'WW').code, null);
+  assert.equal(extractCode('WW-7K2O', 'WW').code, null);        // O is not in the code alphabet
+  assert.equal(extractCode('NEWW-7K2M', 'WW').code, null);      // prefix must stand alone
+  assert.equal(classifyInbound(extractCode('STORM WW-7K2M', 'WW').rest), 'start');
+  assert.equal(classifyInbound(extractCode('STOP WW-7K2M', 'WW').rest), 'stop');
 });
